@@ -1,0 +1,7 @@
+## Interface: 11404
+## Title: GiveAwayHelper
+## Notes: Making Ram's life easier
+## Author: Tesla
+## Version: 0.0.1
+
+GiveAwayHelper.lua
