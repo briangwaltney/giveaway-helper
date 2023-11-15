@@ -63,6 +63,9 @@ local function CatFilter(cat, itemType, itemSubType, loc)
 	if cat == "trinkets" and loc == "INVTYPE_TRINKET" then
 		return true
 	end
+	if cat == "offhands" and (loc == "INVTYPE_RELIC" or loc == "INVTYPE_HOLDABLE") then
+		return true
+	end
 	if Filters[cat].type == itemType and Filters[cat].subType == itemSubType and loc ~= "INVTYPE_CLOAK" then
 		return true
 	else
@@ -148,8 +151,10 @@ local function GetMailItems(cat)
 	table.sort(itemsWithoutIds, sortByLevel)
 
 	local type = cat
+	local num = 0
 	if Filters[cat] ~= nil then
 		type = Filters[cat].subType
+		num = Filters[cat].order
 	end
 
 	local startString = "---- " .. string.upper(type) .. " LEVELS: " .. lvlMin .. "-" .. lvlMax .. " ----"
@@ -176,8 +181,8 @@ local function GetMailItems(cat)
 			OFFICER_CHANNEL
 		)
 	end
-	SendMessage("---- END OF SEGMENT ----", OFFICER_CHANNEL)
 	SendMessage("---- END OF SEGMENT ----", CHANNEL)
+	SendMessage("---- END OF SEGMENT " .. num .. " ----", OFFICER_CHANNEL)
 end
 
 function Min(a, b)
@@ -199,19 +204,17 @@ end
 function PrintCats()
 	local withoutKeys = {}
 	for cat, val in pairs(Filters) do
-		local x = {
-			type = val.type,
-			subType = val.subType,
+		table.insert(withoutKeys, {
+			order = val.order,
 			key = cat,
-		}
-		table.insert(withoutKeys, x)
+		})
 	end
-	local function sortByType(a, b)
-		return a.type < b.type
+	local function sortByOrder(a, b)
+		return a.order < b.order
 	end
-	table.sort(withoutKeys, sortByType)
+	table.sort(withoutKeys, sortByOrder)
 	for _, val in pairs(withoutKeys) do
-		print(val.key)
+		print(val.order .. ": " .. val.key)
 	end
 end
 
@@ -226,142 +229,152 @@ Filters = {
 	plate = {
 		type = "Armor",
 		subType = "Plate",
+		order = 1,
 	},
 	mail = {
 		type = "Armor",
 		subType = "Mail",
+		order = 2,
 	},
 	leather = {
 		type = "Armor",
 		subType = "Leather",
+		order = 3,
 	},
 	cloth = {
 		type = "Armor",
 		subType = "Cloth",
-	},
-	shields = {
-		type = "Armor",
-		subType = "Shields",
-	},
-	offhands = {
-		type = "Armor",
-		subType = "Miscellaneous",
-	},
-	librams = {
-		type = "Armor",
-		subType = "Librams",
-	},
-	idols = {
-		type = "Armor",
-		subType = "Idol",
-	},
-	totems = {
-		type = "Armor",
-		subType = "Totem",
-	},
-	sigils = {
-		type = "Armor",
-		subType = "Sigil",
-	},
-	relics = {
-		type = "Armor",
-		subType = "Relic",
-	},
-	axes2h = {
-		type = "Weapon",
-		subType = "Two-Handed Axes",
-	},
-	maces2h = {
-		type = "Weapon",
-		subType = "Two-Handed Maces",
-	},
-	swords2h = {
-		type = "Weapon",
-		subType = "Two-Handed Swords",
-	},
-	polearms = {
-		type = "Weapon",
-		subType = "Polearms",
-	},
-	axes1h = {
-		type = "Weapon",
-		subType = "One-Handed Axes",
-	},
-	maces1h = {
-		type = "Weapon",
-		subType = "One-Handed Maces",
-	},
-	swords1h = {
-		type = "Weapon",
-		subType = "One-Handed Swords",
-	},
-	daggers = {
-		type = "Weapon",
-		subType = "Daggers",
-	},
-	wands = {
-		type = "Weapon",
-		subType = "Wands",
-	},
-	bows = {
-		type = "Weapon",
-		subType = "Bows",
-	},
-	crossbows = {
-		type = "Weapon",
-		subType = "Crossbows",
-	},
-	guns = {
-		type = "Weapon",
-		subType = "Guns",
-	},
-	staves = {
-		type = "Weapon",
-		subType = "Staves",
-	},
-	fist = {
-		type = "Weapon",
-		subType = "Fist Weapons",
-	},
-	rings = {
-		type = "Miscellaneous",
-		subType = "Rings",
-	},
-	necks = {
-		type = "Miscellaneous",
-		subType = "Necklaces",
-	},
-	trinkets = {
-		type = "Miscellaneous",
-		subType = "Trinkets",
+		order = 4,
 	},
 	cloaks = {
 		type = "Miscellaneous",
 		subType = "Cloaks",
+		order = 5,
+	},
+	offhands = {
+		type = "Miscellaneous",
+		subType = "Offhands",
+		order = 6,
+	},
+	necks = {
+		type = "Miscellaneous",
+		subType = "Necklaces",
+		order = 7,
+	},
+	rings = {
+		type = "Miscellaneous",
+		subType = "Rings",
+		order = 8,
+	},
+	trinkets = {
+		type = "Miscellaneous",
+		subType = "Trinkets",
+		order = 9,
+	},
+	shields = {
+		type = "Armor",
+		subType = "Shields",
+		order = 10,
+	},
+	wands = {
+		type = "Weapon",
+		subType = "Wands",
+		order = 11,
+	},
+	bows = {
+		type = "Weapon",
+		subType = "Bows",
+		order = 12,
+	},
+	crossbows = {
+		type = "Weapon",
+		subType = "Crossbows",
+		order = 13,
+	},
+	guns = {
+		type = "Weapon",
+		subType = "Guns",
+		order = 14,
+	},
+	fist = {
+		type = "Weapon",
+		subType = "Fist Weapons",
+		order = 15,
+	},
+	polearms = {
+		type = "Weapon",
+		subType = "Polearms",
+		order = 16,
+	},
+	staves = {
+		type = "Weapon",
+		subType = "Staves",
+		order = 17,
+	},
+	daggers = {
+		type = "Weapon",
+		subType = "Daggers",
+		order = 18,
+	},
+	swords1h = {
+		type = "Weapon",
+		subType = "One-Handed Swords",
+		order = 19,
+	},
+	axes1h = {
+		type = "Weapon",
+		subType = "One-Handed Axes",
+		order = 20,
+	},
+	maces1h = {
+		type = "Weapon",
+		subType = "One-Handed Maces",
+		order = 21,
+	},
+	swords2h = {
+		type = "Weapon",
+		subType = "Two-Handed Swords",
+		order = 22,
+	},
+	axes2h = {
+		type = "Weapon",
+		subType = "Two-Handed Axes",
+		order = 23,
+	},
+	maces2h = {
+		type = "Weapon",
+		subType = "Two-Handed Maces",
+		order = 24,
 	},
 	enchanting = {
 		type = "Recipe",
 		subType = "Enchanting",
+		order = 25,
 	},
 	alchemy = {
 		type = "Recipe",
 		subType = "Alchemy",
+		order = 26,
 	},
 	blacksmithing = {
 		type = "Recipe",
 		subType = "Blacksmithing",
+		order = 27,
 	},
 	engineering = {
 		type = "Recipe",
 		subType = "Engineering",
+		order = 28,
 	},
 	leatherworking = {
 		type = "Recipe",
 		subType = "Leatherworking",
+		order = 29,
 	},
 	tailoring = {
 		type = "Recipe",
 		subType = "Tailoring",
+		order = 30,
 	},
 }
 
@@ -369,13 +382,21 @@ local BankAlts = {
 	holdmytea = true,
 	levelup = true,
 	baggervance = true,
+	ofthewhale = true,
 }
 
+function TrimStringBeforeHyphen(inputString)
+	local result = string.match(inputString, "^(.-)-")
+	return result or inputString
+end
+
 local function myChatFilter(self, event, msg, longAuthor, lang, _, author, ...)
-	if self.name ~= "claims" then
+	local shortName = TrimStringBeforeHyphen(author)
+	if string.lower(self.name) ~= "claims" then
 		return false
 	end
-	if BankAlts[string.lower(author)] ~= nil then
+
+	if BankAlts[string.lower(shortName)] ~= nil then
 		return true
 	end
 	if string.find(msg, "%[") == nil or string.find(msg, "%]") == nil then
