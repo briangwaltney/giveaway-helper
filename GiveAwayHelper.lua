@@ -17,6 +17,8 @@ local function PrintHelp()
 	)
 	print("/gaCats - lists all categories")
 	print("/gaGrab <mail> <itemInMail> - grabs the given mail. (x, y) in officer message match the mail and item")
+	print("To add a Raiders only note include 'raid' in the subject line of the mail")
+	print("To add a Recyclable note include 'recycle' in the subject line of the mail")
 end
 
 local function setChannel(channelNum)
@@ -107,8 +109,16 @@ local function GetMailItems(cat)
 					if CatFilter(cat, itemType, itemSubType, equipLoc) then
 						if LevelFilter(lvlMin, lvlMax, itemMinLevel) then
 							local note = ""
+
+							-- for match in subject:gmatch("%[(.-)%]") do
+							-- 	note = match
+							-- end
+
 							if string.find(string.lower(subject), "raid") then
 								note = "(Core raider mains only)"
+							end
+							if string.find(string.lower(subject), "recycle") then
+								note = "(Recyclable - Return when finished using)"
 							end
 
 							local mailLoc = "(" .. i .. ", " .. j .. ")"
@@ -375,6 +385,11 @@ Filters = {
 		type = "Recipe",
 		subType = "Tailoring",
 		order = 30,
+	},
+	books = {
+		type = "Recipe",
+		subType = "Book",
+		order = 31,
 	},
 }
 
