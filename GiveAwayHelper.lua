@@ -1,4 +1,5 @@
---zip -r ../GiveAwayHelper-v0.1.2.zip . -x '*.git*'
+--zip -d GiveAwayHelper.zip "__MACOSX*"
+--run this command after copying files into a clean folder called GiveAwayHelper
 SLASH_CHAN1 = "/gaChan"
 SLASH_LIST1 = "/gaList"
 SLASH_CATS1 = "/gaCats"
@@ -718,16 +719,6 @@ GiveAwayHelper.PrintListButton:HookScript("OnClick", function()
 	GiveAwayHelper.printFiltered()
 end)
 
-SlashCmdList["CHAN"] = GiveAwayHelper.setChannel
-SlashCmdList["LIST"] = GiveAwayHelper.GetMailByCat
-SlashCmdList["CATS"] = GiveAwayHelper.PrintCats
-SlashCmdList["GRAB"] = GiveAwayHelper.SearchForItem
-SlashCmdList["RESET"] = GiveAwayHelper.resetVars
-SlashCmdList["HELP"] = GiveAwayHelper.PrintHelp
-SlashCmdList["DB"] = GiveAwayHelper.PrintDB
-SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
-SlashCmdList["NOTES"] = GiveAwayHelper.notes
-
 Filters = {
 	plate = {
 		type = "Armor",
@@ -948,7 +939,6 @@ GiveAwayHelper.PrintHelp = function()
 	print("----------------------------")
 	print("/gaDB - view saved variables")
 	print("/gaChan <channel number or GUILD> - sets the channel to send messages to")
-	-- print("/gaOfficerChan <channel number> - sets the channel to send officer messages to. Includes mailbox location")
 	print(
 		"/gaList <cat> <levelMin optional> <levelMax optional> - lists all items in the mailbox of the given category. If levelMin and levelMax are not provided, defaults to 0-60"
 	)
@@ -963,3 +953,13 @@ GiveAwayHelper.PrintHelp = function()
 	print("/ganotes <label> <note or remove> - adds a predefined note to the list. Use 'remove' to remove a note")
 	print("-----------------------")
 end
+
+SlashCmdList["CHAN"] = GiveAwayHelper.setChannel
+SlashCmdList["LIST"] = GiveAwayHelper.GetMailByCat
+SlashCmdList["CATS"] = GiveAwayHelper.PrintCats
+SlashCmdList["GRAB"] = GiveAwayHelper.SearchForItem
+SlashCmdList["RESET"] = GiveAwayHelper.resetVars
+SlashCmdList["HELP"] = GiveAwayHelper.PrintHelp
+SlashCmdList["DB"] = GiveAwayHelper.PrintDB
+SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
+SlashCmdList["NOTES"] = GiveAwayHelper.notes
