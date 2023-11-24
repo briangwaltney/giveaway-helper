@@ -118,6 +118,7 @@ GiveAwayHelper.SearchForItem = function(itemLink)
 			local link = GetInboxItemLink(i, j)
 			if link == itemLink then
 				local name, _, _, itemCount = GetInboxItem(i, j)
+				TakeInboxItem(i, j)
 				local found = 10000
 				for idx, item in pairs(GiveAwayHelper.items) do
 					if item.itemName == name then
@@ -130,10 +131,9 @@ GiveAwayHelper.SearchForItem = function(itemLink)
 					end
 					if idx > found then
 						local _, _, _, _, currY = item.frame:GetPoint()
-						item.frame:SetPoint("TOPLEFT", 40, currY + 30)
+						item.frame:SetPoint("TOPLEFT", 40, (currY or 0) + 30)
 					end
 				end
-				TakeInboxItem(i, j)
 				return
 			end
 			j = j + 1
@@ -223,7 +223,9 @@ GiveAwayHelper.CreateButton = function(item)
 	button.extra:SetWidth(230)
 	button.extra:SetHeight(10)
 	button.extra:SetTextColor(1, 1, 1, 1)
-	button.extra:SetText(item.itemType .. ", " .. item.itemSubType .. ", " .. item.itemMinLevel .. " " .. item.note)
+	button.extra:SetText(
+		item.itemType .. ", " .. item.itemSubType .. ", " .. (item.itemMinLevel or 0) .. " " .. item.note
+	)
 
 	-- counter
 	button.count = button:CreateFontString(buttonName .. "_count", "ARTWORK", "GameFontNormalSmall")
@@ -552,6 +554,15 @@ local function createDropdown(opts)
 	return dropdown
 end
 
+GiveAwayHelper.containsValue = function(table, value)
+	for _, v in pairs(table) do
+		if v == value then
+			return true
+		end
+	end
+	return false
+end
+
 GiveAwayHelper.getItemFields = function(key)
 	local types = {}
 	for _, item in pairs(GiveAwayHelper.items) do
@@ -562,7 +573,9 @@ GiveAwayHelper.getItemFields = function(key)
 	local valuesOnly = { "All" }
 	for k in pairs(types) do
 		if key == "itemSlot" then
-			table.insert(valuesOnly, _G[k])
+			if GiveAwayHelper.containsValue(valuesOnly, _G[k]) == false then
+				table.insert(valuesOnly, _G[k])
+			end
 		else
 			table.insert(valuesOnly, k)
 		end
@@ -921,6 +934,9 @@ local function myChatFilter(self, _, msg, _, _, _, author)
 	if string.lower(self.name) ~= "claims" then
 		return false
 	end
+	if string.find(string.lower(msg), "end of segment") ~= nil then
+		return false
+	end
 
 	if GiveAwayHelperDB.BankAlts[string.lower(shortName)] ~= nil then
 		return true
@@ -1005,3 +1021,13 @@ SlashCmdList["STATE"] = GiveAwayHelper.PrintState
 SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
 SlashCmdList["NOTES"] = GiveAwayHelper.notes
 SlashCmdList["UPDATE"] = GiveAwayHelper.ShowItems
+
+-- Message: Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:134: attempt to perform arithmetic on local 'currY' (a nil value)
+-- Time: Fri Nov 24 22:35:13 2023
+-- Count: 1
+-- Stack: Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:134: attempt to perform arithmetic on local 'currY' (a nil value)
+-- [string "=[C]"]: ?
+-- [string "@Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua"]:134: in function `SearchForItem'
+-- [string "@Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua"]:246: in function <Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:244>
+--
+-- Locals: (*temporary) = <function> defined =[C]:-1
