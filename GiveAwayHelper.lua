@@ -9,6 +9,7 @@ SLASH_RESET1 = "/gareset"
 SLASH_FRAMESTK1 = "/fs"
 SLASH_BANKALTS1 = "/gabankalts"
 SLASH_NOTES1 = "/ganotes"
+SLASH_UPDATE1 = "/gaupdate"
 
 GiveAwayHelper = {
 	items = {},
@@ -492,9 +493,12 @@ GiveAwayHelper.mainFrame.ScrollFrame:SetScrollChild(GiveAwayHelper.mainFrame.Scr
 GiveAwayHelper.mainFrame:Hide()
 
 GiveAwayHelper.mainFrame:RegisterEvent("MAIL_INBOX_UPDATE")
+GiveAwayHelper.mainFrame:RegisterEvent("MAIL_SHOW")
 GiveAwayHelper.mainFrame:SetScript("OnEvent", function(self, event, ...)
-	if event == "MAIL_INBOX_UPDATE" then
-		GiveAwayHelper.GetAllItems()
+	GiveAwayHelper.GetAllItems()
+	-- GiveAwayHelper.CreateInputs()
+	if GiveAwayHelper.searchBox ~= nil then
+		GiveAwayHelper.ShowItems()
 	end
 end)
 
@@ -710,7 +714,7 @@ GiveAwayHelper.CreateInputs = function()
 	GiveAwayHelper.grabInst:SetText("Shift + Right Click to take item")
 	GiveAwayHelper.grabInst:SetJustifyH("RIGHT")
 
-	GiveAwayHelper.mainFrame:SetSize(GiveAwayHelper.searchBox:GetWidth() + 50, MailFrame:GetHeight())
+	GiveAwayHelper.mainFrame:SetSize(GiveAwayHelper.searchBox:GetWidth() + 55, MailFrame:GetHeight())
 end
 
 GiveAwayHelper.showButtonText = function()
@@ -1000,3 +1004,4 @@ SlashCmdList["DB"] = GiveAwayHelper.PrintDB
 SlashCmdList["STATE"] = GiveAwayHelper.PrintState
 SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
 SlashCmdList["NOTES"] = GiveAwayHelper.notes
+SlashCmdList["UPDATE"] = GiveAwayHelper.ShowItems
