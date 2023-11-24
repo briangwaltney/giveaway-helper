@@ -1,11 +1,10 @@
---zip -d GiveAwayHelper.zip "__MACOSX*"
---run this command after copying files into a clean folder called GiveAwayHelper
 SLASH_CHAN1 = "/gaChan"
 SLASH_LIST1 = "/gaList"
 SLASH_CATS1 = "/gaCats"
 SLASH_GRAB1 = "/gaGrab"
 SLASH_HELP1 = "/gahelp"
 SLASH_DB1 = "/gadb"
+SLASH_STATE1 = "/gastate"
 SLASH_RESET1 = "/gareset"
 SLASH_FRAMESTK1 = "/fs"
 SLASH_BANKALTS1 = "/gabankalts"
@@ -108,7 +107,7 @@ GiveAwayHelper.CatFilter = function(cat, itemType, itemSubType, loc)
 	end
 end
 
-GiveAwayHelper.SearchForItem = function(fullName)
+GiveAwayHelper.SearchForItem = function(itemLink)
 	local numItems = GetInboxNumItems()
 	local i = 1
 	local j = 1
@@ -116,7 +115,23 @@ GiveAwayHelper.SearchForItem = function(fullName)
 	while i <= numItems do
 		while j < 21 do
 			local link = GetInboxItemLink(i, j)
-			if link == fullName then
+			if link == itemLink then
+				local name, _, _, itemCount = GetInboxItem(i, j)
+				local found = 10000
+				for idx, item in pairs(GiveAwayHelper.items) do
+					if item.itemName == name then
+						item.itemCount = item.itemCount - itemCount
+						item.frame.count:SetText(item.itemCount)
+						if item.itemCount == 0 then
+							found = idx
+							item.frame:Hide()
+						end
+					end
+					if idx > found then
+						local _, _, _, _, currY = item.frame:GetPoint()
+						item.frame:SetPoint("TOPLEFT", 40, currY + 30)
+					end
+				end
 				TakeInboxItem(i, j)
 				return
 			end
@@ -172,9 +187,7 @@ GiveAwayHelper.CreateButton = function(item)
 	button.icon:SetTexture(item.itemTexture)
 
 	local getFontColor = function(qual)
-		if qual == 0 then
-			return 0.5, 0.5, 0.5
-		elseif qual == 1 then
+		if qual == 1 then
 			return 1, 1, 1
 		elseif qual == 2 then
 			return 0, 0.8, 0
@@ -186,6 +199,8 @@ GiveAwayHelper.CreateButton = function(item)
 			return 1, 0.5, 0
 		elseif qual == 6 then
 			return 1, 0.5, 0
+		else
+			return 0.5, 0.5, 0.5
 		end
 	end
 
@@ -223,8 +238,11 @@ GiveAwayHelper.CreateButton = function(item)
 
 	button:Hide()
 
-	button:SetScript("OnClick", function()
-		if IsShiftKeyDown() then
+	button:SetScript("OnClick", function(_, mouseButton)
+		if IsShiftKeyDown() and mouseButton == "RightButton" then
+			GiveAwayHelper.SearchForItem(item.itemLink)
+		end
+		if IsShiftKeyDown() and mouseButton == "LeftButton" then
 			ChatEdit_InsertLink(item.itemLink)
 		end
 	end)
@@ -310,7 +328,8 @@ GiveAwayHelper.filterItems = function()
 
 	for _, item in pairs(GiveAwayHelper.items) do
 		if
-			GiveAwayHelper.search == "" or string.find(string.lower(item.itemName), string.lower(GiveAwayHelper.search))
+			item.itemCount > 0 and GiveAwayHelper.search == ""
+			or string.find(string.lower(item.itemName), string.lower(GiveAwayHelper.search))
 		then
 			if GiveAwayHelper.type == "All" or GiveAwayHelper.type == item.itemType then
 				if GiveAwayHelper.subType == "All" or GiveAwayHelper.subType == item.itemSubType then
@@ -459,11 +478,11 @@ GiveAwayHelper.mainFrame:SetPoint("LEFT", MailFrame, "RIGHT", 10, 0)
 GiveAwayHelper.mainFrame.Title = GiveAwayHelper.mainFrame:CreateFontString(nil, "OVERLAY")
 GiveAwayHelper.mainFrame.Title:SetFontObject("GameFontHighlight")
 GiveAwayHelper.mainFrame.Title:SetPoint("CENTER", GiveAwayHelper.mainFrame.TitleBg, "CENTER", 11, 0)
-GiveAwayHelper.mainFrame.Title:SetText("Giveaway Helper")
+GiveAwayHelper.mainFrame.Title:SetText("Mail Bank")
 GiveAwayHelper.mainFrame.ScrollFrame =
 	CreateFrame("ScrollFrame", nil, GiveAwayHelper.mainFrame, "UIPanelScrollFrameTemplate")
-GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame, "TOPLEFT", -26, -40)
-GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", GiveAwayHelper.mainFrame, "BOTTOMRIGHT", -31, 15)
+GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame, "TOPLEFT", -28, -32)
+GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", GiveAwayHelper.mainFrame, "BOTTOMRIGHT", -37, 10)
 GiveAwayHelper.mainFrame.ScrollChild = CreateFrame("Frame", nil, GiveAwayHelper.mainFrame.ScrollFrame)
 GiveAwayHelper.mainFrame.ScrollChild:SetSize(
 	GiveAwayHelper.mainFrame:GetWidth(),
@@ -548,6 +567,9 @@ GiveAwayHelper.getItemFields = function(key)
 end
 
 GiveAwayHelper.CreateInputs = function()
+	if GiveAwayHelper.searchBox ~= nil then
+		return
+	end
 	local dds = {}
 	local typestart = 20
 	local subTypeStart = 0
@@ -678,16 +700,24 @@ GiveAwayHelper.CreateInputs = function()
 		GiveAwayHelper.ShowItems()
 	end)
 	GiveAwayHelper.searchBox:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame.ScrollChild, 45, -15)
-	GiveAwayHelper.search_title = GiveAwayHelper.searchBox:CreateFontString("minLvl_title", "OVERLAY", "GameFontNormal")
+	GiveAwayHelper.search_title = GiveAwayHelper.searchBox:CreateFontString("search_title", "OVERLAY", "GameFontNormal")
 	GiveAwayHelper.search_title:SetPoint("TOPLEFT", -3, 12)
 	GiveAwayHelper.search_title:SetText("Item Search" .. " (" .. #GiveAwayHelper.filteredItems .. ")")
+
+	GiveAwayHelper.grabInst =
+		GiveAwayHelper.searchBox:CreateFontString("grab_instructions", "OVERLAY", "GameFontHighlightSmall")
+	GiveAwayHelper.grabInst:SetPoint("TOPRIGHT", -3, 12)
+	GiveAwayHelper.grabInst:SetText("Shift + Right Click to take item")
+	GiveAwayHelper.grabInst:SetJustifyH("RIGHT")
+
+	GiveAwayHelper.mainFrame:SetSize(GiveAwayHelper.searchBox:GetWidth() + 50, MailFrame:GetHeight())
 end
 
 GiveAwayHelper.showButtonText = function()
 	if GiveAwayHelper.Show then
-		return "Hide Giveaway Helper"
+		return "Hide Mail Bank"
 	else
-		return "Show Giveaway Helper"
+		return "Show Mail Bank"
 	end
 end
 
@@ -696,7 +726,7 @@ GiveAwayHelper.toggleShow = function()
 	GiveAwayHelper.toggleButton:SetText(GiveAwayHelper.showButtonText())
 	if GiveAwayHelper.Show then
 		GiveAwayHelper.mainFrame:Show()
-		GiveAwayHelper.PrintListButton:SetText("Print To: " .. GiveAwayHelperDB.CHANNEL)
+		GiveAwayHelper.PrintListButton:SetText("Print To: /" .. GiveAwayHelperDB.CHANNEL)
 		GiveAwayHelper.GetAllItems()
 		GiveAwayHelper.CreateInputs()
 		GiveAwayHelper.ShowItems()
@@ -935,6 +965,12 @@ GiveAwayHelper.PrintDB = function()
 	print("-----------------------")
 end
 
+GiveAwayHelper.PrintState = function(item)
+	print("-----------------------")
+	GiveAwayHelper.printTableValues(GiveAwayHelper[item])
+	print("-----------------------")
+end
+
 GiveAwayHelper.PrintHelp = function()
 	print("----------------------------")
 	print("/gaDB - view saved variables")
@@ -961,5 +997,6 @@ SlashCmdList["GRAB"] = GiveAwayHelper.SearchForItem
 SlashCmdList["RESET"] = GiveAwayHelper.resetVars
 SlashCmdList["HELP"] = GiveAwayHelper.PrintHelp
 SlashCmdList["DB"] = GiveAwayHelper.PrintDB
+SlashCmdList["STATE"] = GiveAwayHelper.PrintState
 SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
 SlashCmdList["NOTES"] = GiveAwayHelper.notes
