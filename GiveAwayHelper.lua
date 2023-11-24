@@ -108,31 +108,19 @@ GiveAwayHelper.CatFilter = function(cat, itemType, itemSubType, loc)
 	end
 end
 
-GiveAwayHelper.SearchForItem = function(itemLink)
+GiveAwayHelper.GrabItem = function(itemLink)
 	local numItems = GetInboxNumItems()
 	local i = 1
 	local j = 1
 
 	while i <= numItems do
-		while j < 21 do
+		while j < 16 do
 			local link = GetInboxItemLink(i, j)
 			if link == itemLink then
-				local name, _, _, itemCount = GetInboxItem(i, j)
 				TakeInboxItem(i, j)
-				local found = 10000
-				for idx, item in pairs(GiveAwayHelper.items) do
-					if item.itemName == name then
-						item.itemCount = item.itemCount - itemCount
-						item.frame.count:SetText(item.itemCount)
-						if item.itemCount == 0 then
-							found = idx
-							item.frame:Hide()
-						end
-					end
-					if idx > found then
-						local _, _, _, _, currY = item.frame:GetPoint()
-						item.frame:SetPoint("TOPLEFT", 40, (currY or 0) + 30)
-					end
+				GiveAwayHelper.GetAllItems()
+				if GiveAwayHelper.searchBox ~= nil then
+					GiveAwayHelper.ShowItems()
 				end
 				return
 			end
@@ -141,6 +129,7 @@ GiveAwayHelper.SearchForItem = function(itemLink)
 		j = 1
 		i = i + 1
 	end
+
 	print("ITEM NOT FOUND IN MAILBOX")
 end
 
@@ -224,7 +213,13 @@ GiveAwayHelper.CreateButton = function(item)
 	button.extra:SetHeight(10)
 	button.extra:SetTextColor(1, 1, 1, 1)
 	button.extra:SetText(
-		item.itemType .. ", " .. item.itemSubType .. ", " .. (item.itemMinLevel or 0) .. " " .. item.note
+		item.itemType
+			.. ", "
+			.. (item.itemSubType or "")
+			.. ", "
+			.. (item.itemMinLevel or 0)
+			.. " "
+			.. (item.note or "")
 	)
 
 	-- counter
@@ -243,7 +238,7 @@ GiveAwayHelper.CreateButton = function(item)
 
 	button:SetScript("OnClick", function(_, mouseButton)
 		if IsShiftKeyDown() and mouseButton == "RightButton" then
-			GiveAwayHelper.SearchForItem(item.itemLink)
+			GiveAwayHelper.GrabItem(item.itemLink)
 		end
 		if IsShiftKeyDown() and mouseButton == "LeftButton" then
 			ChatEdit_InsertLink(item.itemLink)
@@ -498,7 +493,6 @@ GiveAwayHelper.mainFrame:RegisterEvent("MAIL_INBOX_UPDATE")
 GiveAwayHelper.mainFrame:RegisterEvent("MAIL_SHOW")
 GiveAwayHelper.mainFrame:SetScript("OnEvent", function(self, event, ...)
 	GiveAwayHelper.GetAllItems()
-	-- GiveAwayHelper.CreateInputs()
 	if GiveAwayHelper.searchBox ~= nil then
 		GiveAwayHelper.ShowItems()
 	end
@@ -1013,7 +1007,7 @@ end
 SlashCmdList["CHAN"] = GiveAwayHelper.setChannel
 SlashCmdList["LIST"] = GiveAwayHelper.GetMailByCat
 SlashCmdList["CATS"] = GiveAwayHelper.PrintCats
-SlashCmdList["GRAB"] = GiveAwayHelper.SearchForItem
+SlashCmdList["GRAB"] = GiveAwayHelper.GrabItem
 SlashCmdList["RESET"] = GiveAwayHelper.resetVars
 SlashCmdList["HELP"] = GiveAwayHelper.PrintHelp
 SlashCmdList["DB"] = GiveAwayHelper.PrintDB
@@ -1021,13 +1015,3 @@ SlashCmdList["STATE"] = GiveAwayHelper.PrintState
 SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
 SlashCmdList["NOTES"] = GiveAwayHelper.notes
 SlashCmdList["UPDATE"] = GiveAwayHelper.ShowItems
-
--- Message: Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:134: attempt to perform arithmetic on local 'currY' (a nil value)
--- Time: Fri Nov 24 22:35:13 2023
--- Count: 1
--- Stack: Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:134: attempt to perform arithmetic on local 'currY' (a nil value)
--- [string "=[C]"]: ?
--- [string "@Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua"]:134: in function `SearchForItem'
--- [string "@Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua"]:246: in function <Interface/AddOns/GiveAwayHelper/GiveAwayHelper.lua:244>
---
--- Locals: (*temporary) = <function> defined =[C]:-1

@@ -2,7 +2,7 @@
 ## Title: GiveAwayHelper
 ## Notes: Making Ram's life easier
 ## Author: Tesla
-## Version: 0.1.11
+## Version: 0.1.14
 ## SavedVariables: GiveAwayHelperDB
 
 GiveAwayHelper.lua
