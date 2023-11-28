@@ -11,7 +11,7 @@ SLASH_BANKALTS1 = "/gabankalts"
 SLASH_NOTES1 = "/ganotes"
 SLASH_UPDATE1 = "/gaupdate"
 
-GiveAwayHelper = {
+M = {
 	items = {},
 	filteredItems = {},
 	minLvl = 1,
@@ -38,11 +38,11 @@ local default = {
 
 GiveAwayHelperDB = GiveAwayHelperDB or default
 
-GiveAwayHelper.resetVars = function()
+M.resetVars = function()
 	GiveAwayHelperDB = default
 end
 
-GiveAwayHelper.bankAlts = function(input)
+M.bankAlts = function(input)
 	local name, add = strsplit(" ", input)
 	if add == "add" then
 		GiveAwayHelperDB.BankAlts[string.lower(name)] = true
@@ -53,7 +53,7 @@ GiveAwayHelper.bankAlts = function(input)
 	end
 end
 
-GiveAwayHelper.notes = function(input)
+M.notes = function(input)
 	local label, note = input:match("([^%s]+)%s(.*)")
 	if note == "remove" then
 		GiveAwayHelperDB.Notes[string.lower(label)] = nil
@@ -64,17 +64,17 @@ GiveAwayHelper.notes = function(input)
 	end
 end
 
-GiveAwayHelper.setChannel = function(channelNum)
+M.setChannel = function(channelNum)
 	if channelNum == "" then
 		GiveAwayHelperDB.CHANNEL = "7"
 	else
 		GiveAwayHelperDB.CHANNEL = channelNum
 	end
 	print("CHANNEL SET TO: " .. GiveAwayHelperDB.CHANNEL)
-	GiveAwayHelper.PrintListButton:SetText("Print To: " .. GiveAwayHelperDB.CHANNEL)
+	M.PrintListButton:SetText("Print To: " .. GiveAwayHelperDB.CHANNEL)
 end
 
-GiveAwayHelper.SendMessage = function(msg, channel)
+M.SendMessage = function(msg, channel)
 	if channel == nil then
 		channel = "7"
 	end
@@ -85,7 +85,7 @@ GiveAwayHelper.SendMessage = function(msg, channel)
 	end
 end
 
-GiveAwayHelper.CatFilter = function(cat, itemType, itemSubType, loc)
+M.CatFilter = function(cat, itemType, itemSubType, loc)
 	if cat == "rings" and loc == "INVTYPE_FINGER" then
 		return true
 	end
@@ -108,7 +108,7 @@ GiveAwayHelper.CatFilter = function(cat, itemType, itemSubType, loc)
 	end
 end
 
-GiveAwayHelper.GrabItem = function(itemLink)
+M.GrabItem = function(itemLink)
 	local numItems = GetInboxNumItems()
 	local i = 1
 	local j = 1
@@ -118,9 +118,9 @@ GiveAwayHelper.GrabItem = function(itemLink)
 			local link = GetInboxItemLink(i, j)
 			if link == itemLink then
 				TakeInboxItem(i, j)
-				GiveAwayHelper.GetAllItems()
-				if GiveAwayHelper.searchBox ~= nil then
-					GiveAwayHelper.ShowItems()
+				M.GetAllItems()
+				if M.searchBox ~= nil then
+					M.ShowItems()
 				end
 				return
 			end
@@ -133,7 +133,7 @@ GiveAwayHelper.GrabItem = function(itemLink)
 	print("ITEM NOT FOUND IN MAILBOX")
 end
 
-GiveAwayHelper.LevelFilter = function(min, max, itemLevel)
+M.LevelFilter = function(min, max, itemLevel)
 	if itemLevel >= tonumber(min) and itemLevel <= tonumber(max) then
 		return true
 	else
@@ -143,10 +143,10 @@ end
 
 BUTTON_COUNT = 0
 
-GiveAwayHelper.CreateButton = function(item)
+M.CreateItemFrames = function(item)
 	BUTTON_COUNT = BUTTON_COUNT + 1
 	local buttonName = "GiveawayHelper_Button_" .. BUTTON_COUNT
-	local button = CreateFrame("BUTTON", buttonName, GiveAwayHelper.mainFrame.ScrollChild)
+	local button = CreateFrame("BUTTON", buttonName, M.mainFrame.ScrollChild)
 	button:SetWidth(270)
 	button:SetHeight(28)
 	button:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
@@ -213,7 +213,7 @@ GiveAwayHelper.CreateButton = function(item)
 	button.extra:SetHeight(10)
 	button.extra:SetTextColor(1, 1, 1, 1)
 	button.extra:SetText(
-		item.itemType
+		(item.itemType or "")
 			.. ", "
 			.. (item.itemSubType or "")
 			.. ", "
@@ -238,7 +238,7 @@ GiveAwayHelper.CreateButton = function(item)
 
 	button:SetScript("OnClick", function(_, mouseButton)
 		if IsShiftKeyDown() and mouseButton == "RightButton" then
-			GiveAwayHelper.GrabItem(item.itemLink)
+			M.GrabItem(item.itemLink)
 		end
 		if IsShiftKeyDown() and mouseButton == "LeftButton" then
 			ChatEdit_InsertLink(item.itemLink)
@@ -256,7 +256,7 @@ GiveAwayHelper.CreateButton = function(item)
 	return button
 end
 
-GiveAwayHelper.GetAllItems = function()
+M.GetAllItems = function()
 	local items = {}
 	local numItems = GetInboxNumItems()
 	for i = 1, numItems do
@@ -303,38 +303,37 @@ GiveAwayHelper.GetAllItems = function()
 		end
 	end
 
-	GiveAwayHelper.items = {}
+	M.items = {}
 
 	for _, item in pairs(items) do
-		local f = GiveAwayHelper.CreateButton(item)
+		local f = M.CreateItemFrames(item)
 		item.frame = f
-		table.insert(GiveAwayHelper.items, item)
+		table.insert(M.items, item)
 	end
 
-	table.sort(GiveAwayHelper.items, GiveAwayHelper.sortByLevel)
+	table.sort(M.items, M.sortByLevel)
 end
 
-GiveAwayHelper.sortByLevel = function(a, b)
+M.sortByLevel = function(a, b)
 	return a.itemMinLevel > b.itemMinLevel
 end
 
-GiveAwayHelper.filterItems = function()
-	for i, item in pairs(GiveAwayHelper.filteredItems) do
+M.filterItems = function()
+	for i, item in pairs(M.filteredItems) do
 		item.frame:Hide()
-		GiveAwayHelper.filteredItems[i] = nil
+		M.filteredItems[i] = nil
 	end
 
-	for _, item in pairs(GiveAwayHelper.items) do
+	for _, item in pairs(M.items) do
 		if
-			item.itemCount > 0 and GiveAwayHelper.search == ""
-			or string.find(string.lower(item.itemName), string.lower(GiveAwayHelper.search))
+			item.itemCount > 0 and M.search == "" or string.find(string.lower(item.itemName), string.lower(M.search))
 		then
-			if GiveAwayHelper.type == "All" or GiveAwayHelper.type == item.itemType then
-				if GiveAwayHelper.subType == "All" or GiveAwayHelper.subType == item.itemSubType then
-					if GiveAwayHelper.slot == "All" or GiveAwayHelper.slot == _G[item.itemSlot] then
-						if GiveAwayHelper.minLvl == 1 or GiveAwayHelper.minLvl <= item.itemMinLevel then
-							if GiveAwayHelper.maxLvl >= item.itemMinLevel then
-								table.insert(GiveAwayHelper.filteredItems, item)
+			if M.type == "All" or M.type == item.itemType then
+				if M.subType == "All" or M.subType == item.itemSubType then
+					if M.slot == "All" or M.slot == _G[item.itemSlot] then
+						if M.minLvl == 1 or M.minLvl <= item.itemMinLevel then
+							if M.maxLvl >= item.itemMinLevel then
+								table.insert(M.filteredItems, item)
 							end
 						end
 					end
@@ -344,31 +343,31 @@ GiveAwayHelper.filterItems = function()
 	end
 end
 
-GiveAwayHelper.printFiltered = function()
+M.printFiltered = function()
 	local typeString = ""
 	local subTypeString = ""
 	local slotString = ""
-	if GiveAwayHelper.type ~= "All" then
-		typeString = string.upper(GiveAwayHelper.type) .. " - "
+	if M.type ~= "All" then
+		typeString = string.upper(M.type) .. " - "
 	end
-	if GiveAwayHelper.subType ~= "All" then
-		subTypeString = string.upper(GiveAwayHelper.subType) .. " "
+	if M.subType ~= "All" then
+		subTypeString = string.upper(M.subType) .. " "
 	end
-	if GiveAwayHelper.slot ~= "All" then
-		slotString = string.upper(GiveAwayHelper.slot) .. " "
+	if M.slot ~= "All" then
+		slotString = string.upper(M.slot) .. " "
 	end
 	local startString = "---- "
 		.. typeString
 		.. subTypeString
 		.. slotString
 		.. " LEVELS: "
-		.. GiveAwayHelper.minLvl
+		.. M.minLvl
 		.. "-"
-		.. GiveAwayHelper.maxLvl
+		.. M.maxLvl
 		.. " ----"
-	GiveAwayHelper.SendMessage(startString, GiveAwayHelperDB.CHANNEL)
+	M.SendMessage(startString, GiveAwayHelperDB.CHANNEL)
 
-	for _, item in pairs(GiveAwayHelper.filteredItems) do
+	for _, item in pairs(M.filteredItems) do
 		local countText = ""
 		if item.itemCount > 1 then
 			countText = "(x" .. item.itemCount .. ") "
@@ -378,30 +377,27 @@ GiveAwayHelper.printFiltered = function()
 		if item.itemMinLevel == 60 then
 			levelRange = "min lvl to claim: 60 "
 		else
-			levelRange = "min lvl to claim: " .. GiveAwayHelper.Max(1, item.itemMinLevel - 5) .. " "
+			levelRange = "min lvl to claim: " .. M.Max(1, item.itemMinLevel - 5) .. " "
 		end
 
-		GiveAwayHelper.SendMessage(
-			item.itemLink .. " " .. countText .. " " .. levelRange .. item.note,
-			GiveAwayHelperDB.CHANNEL
-		)
+		M.SendMessage(item.itemLink .. " " .. countText .. " " .. levelRange .. item.note, GiveAwayHelperDB.CHANNEL)
 	end
-	GiveAwayHelper.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
+	M.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
 end
 
-GiveAwayHelper.ShowItems = function()
-	for _, item in pairs(GiveAwayHelper.items) do
+M.ShowItems = function()
+	for _, item in pairs(M.items) do
 		item.frame:Hide()
 	end
-	GiveAwayHelper.filterItems()
-	for i, item in pairs(GiveAwayHelper.filteredItems) do
-		item.frame:SetPoint("TOPLEFT", 40, -30 * (i - 1) - 90)
+	M.filterItems()
+	for i, item in pairs(M.filteredItems) do
+		item.frame:SetPoint("TOPLEFT", 40, -30 * (i - 1))
 		item.frame:Show()
-		GiveAwayHelper.search_title:SetText("Item Search" .. " (" .. #GiveAwayHelper.filteredItems .. ")")
+		M.search_title:SetText("Item Search" .. " (" .. #M.filteredItems .. ")")
 	end
 end
 
-GiveAwayHelper.GetMailByCat = function(input)
+M.GetMailByCat = function(input)
 	if input == "" or input == nil then
 		return
 	end
@@ -416,9 +412,9 @@ GiveAwayHelper.GetMailByCat = function(input)
 
 	local list = {}
 
-	for _, item in pairs(GiveAwayHelper.items) do
-		if GiveAwayHelper.CatFilter(cat, item.itemType, item.itemSubType, item.equipLoc) then
-			if GiveAwayHelper.LevelFilter(lvlMin, lvlMax, item.itemMinLevel) then
+	for _, item in pairs(M.items) do
+		if M.CatFilter(cat, item.itemType, item.itemSubType, item.equipLoc) then
+			if M.LevelFilter(lvlMin, lvlMax, item.itemMinLevel) then
 				table.insert(list, item)
 			end
 		end
@@ -430,7 +426,7 @@ GiveAwayHelper.GetMailByCat = function(input)
 	end
 
 	local startString = "---- " .. string.upper(type) .. " LEVELS: " .. lvlMin .. "-" .. lvlMax .. " ----"
-	GiveAwayHelper.SendMessage(startString, GiveAwayHelperDB.CHANNEL)
+	M.SendMessage(startString, GiveAwayHelperDB.CHANNEL)
 
 	for _, item in pairs(list) do
 		local countText = ""
@@ -442,18 +438,15 @@ GiveAwayHelper.GetMailByCat = function(input)
 		if item.itemMinLevel == 60 then
 			levelRange = "min lvl to claim: 60 "
 		else
-			levelRange = "min lvl to claim: " .. GiveAwayHelper.Max(1, item.itemMinLevel - 5) .. " "
+			levelRange = "min lvl to claim: " .. M.Max(1, item.itemMinLevel - 5) .. " "
 		end
 
-		GiveAwayHelper.SendMessage(
-			item.itemLink .. " " .. countText .. " " .. levelRange .. item.note,
-			GiveAwayHelperDB.CHANNEL
-		)
+		M.SendMessage(item.itemLink .. " " .. countText .. " " .. levelRange .. item.note, GiveAwayHelperDB.CHANNEL)
 	end
-	GiveAwayHelper.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
+	M.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
 end
 
-GiveAwayHelper.PrintCats = function()
+M.PrintCats = function()
 	local withoutKeys = {}
 	for cat, val in pairs(Filters) do
 		table.insert(withoutKeys, {
@@ -470,31 +463,27 @@ GiveAwayHelper.PrintCats = function()
 	end
 end
 
-GiveAwayHelper.mainFrame = CreateFrame("Frame", "GiveAwayHelperMainFrame", MailFrame, "BasicFrameTemplateWithInset")
-GiveAwayHelper.mainFrame:SetSize(HonorFrameProgressButton:GetWidth() + 300, MailFrame:GetHeight())
-GiveAwayHelper.mainFrame:SetPoint("LEFT", MailFrame, "RIGHT", 10, 0)
-GiveAwayHelper.mainFrame.Title = GiveAwayHelper.mainFrame:CreateFontString(nil, "OVERLAY")
-GiveAwayHelper.mainFrame.Title:SetFontObject("GameFontHighlight")
-GiveAwayHelper.mainFrame.Title:SetPoint("CENTER", GiveAwayHelper.mainFrame.TitleBg, "CENTER", 11, 0)
-GiveAwayHelper.mainFrame.Title:SetText("Mail Bank")
-GiveAwayHelper.mainFrame.ScrollFrame =
-	CreateFrame("ScrollFrame", nil, GiveAwayHelper.mainFrame, "UIPanelScrollFrameTemplate")
-GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame, "TOPLEFT", -28, -32)
-GiveAwayHelper.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", GiveAwayHelper.mainFrame, "BOTTOMRIGHT", -37, 10)
-GiveAwayHelper.mainFrame.ScrollChild = CreateFrame("Frame", nil, GiveAwayHelper.mainFrame.ScrollFrame)
-GiveAwayHelper.mainFrame.ScrollChild:SetSize(
-	GiveAwayHelper.mainFrame:GetWidth(),
-	GiveAwayHelper.mainFrame:GetHeight() - 100
-)
-GiveAwayHelper.mainFrame.ScrollFrame:SetScrollChild(GiveAwayHelper.mainFrame.ScrollChild)
-GiveAwayHelper.mainFrame:Hide()
+M.mainFrame = CreateFrame("Frame", "GiveAwayHelperMainFrame", MailFrame, "BasicFrameTemplateWithInset")
+M.mainFrame:SetSize(HonorFrameProgressButton:GetWidth() + 300, MailFrame:GetHeight())
+M.mainFrame:SetPoint("LEFT", MailFrame, "RIGHT", 10, 0)
+M.mainFrame.Title = M.mainFrame:CreateFontString(nil, "OVERLAY")
+M.mainFrame.Title:SetFontObject("GameFontHighlight")
+M.mainFrame.Title:SetPoint("CENTER", M.mainFrame.TitleBg, "CENTER", 11, 0)
+M.mainFrame.Title:SetText("Mail Bank")
+M.mainFrame.ScrollFrame = CreateFrame("ScrollFrame", nil, M.mainFrame, "UIPanelScrollFrameTemplate")
+M.mainFrame.ScrollFrame:SetPoint("TOPLEFT", M.mainFrame, "TOPLEFT", -28, -120)
+M.mainFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", M.mainFrame, "BOTTOMRIGHT", -37, 10)
+M.mainFrame.ScrollChild = CreateFrame("Frame", nil, M.mainFrame.ScrollFrame)
+M.mainFrame.ScrollChild:SetSize(M.mainFrame:GetWidth(), M.mainFrame:GetHeight() - 100)
+M.mainFrame.ScrollFrame:SetScrollChild(M.mainFrame.ScrollChild)
+M.mainFrame:Hide()
 
-GiveAwayHelper.mainFrame:RegisterEvent("MAIL_INBOX_UPDATE")
-GiveAwayHelper.mainFrame:RegisterEvent("MAIL_SHOW")
-GiveAwayHelper.mainFrame:SetScript("OnEvent", function(self, event, ...)
-	GiveAwayHelper.GetAllItems()
-	if GiveAwayHelper.searchBox ~= nil then
-		GiveAwayHelper.ShowItems()
+M.mainFrame:RegisterEvent("MAIL_INBOX_UPDATE")
+M.mainFrame:RegisterEvent("MAIL_SHOW")
+M.mainFrame:SetScript("OnEvent", function(self, event, ...)
+	M.GetAllItems()
+	if M.searchBox ~= nil then
+		M.ShowItems()
 	end
 end)
 
@@ -548,7 +537,7 @@ local function createDropdown(opts)
 	return dropdown
 end
 
-GiveAwayHelper.containsValue = function(table, value)
+M.containsValue = function(table, value)
 	for _, v in pairs(table) do
 		if v == value then
 			return true
@@ -557,9 +546,9 @@ GiveAwayHelper.containsValue = function(table, value)
 	return false
 end
 
-GiveAwayHelper.getItemFields = function(key)
+M.getItemFields = function(key)
 	local types = {}
-	for _, item in pairs(GiveAwayHelper.items) do
+	for _, item in pairs(M.items) do
 		if not types[item[key]] then
 			types[item[key]] = true
 		end
@@ -567,7 +556,7 @@ GiveAwayHelper.getItemFields = function(key)
 	local valuesOnly = { "All" }
 	for k in pairs(types) do
 		if key == "itemSlot" then
-			if GiveAwayHelper.containsValue(valuesOnly, _G[k]) == false then
+			if M.containsValue(valuesOnly, _G[k]) == false then
 				table.insert(valuesOnly, _G[k])
 			end
 		else
@@ -577,65 +566,64 @@ GiveAwayHelper.getItemFields = function(key)
 	return valuesOnly
 end
 
-GiveAwayHelper.CreateInputs = function()
-	if GiveAwayHelper.searchBox ~= nil then
+M.CreateInputs = function()
+	if M.searchBox ~= nil then
 		return
 	end
 	local dds = {}
-	local typestart = 20
+	local typestart = -5
 	local subTypeStart = 0
 	local slotStart = 0
 	dds.type_dd = {
 		["name"] = "Type",
-		["parent"] = GiveAwayHelper.mainFrame.ScrollChild,
+		["parent"] = M.mainFrame,
 		["title"] = "Types",
-		["items"] = GiveAwayHelper.getItemFields("itemType"),
+		["items"] = M.getItemFields("itemType"),
 		["defaultVal"] = "All",
 		["changeFunc"] = function(dropdown_frame, dropdown_val)
-			GiveAwayHelper.type = dropdown_val
-			GiveAwayHelper.ShowItems()
+			M.type = dropdown_val
+			M.ShowItems()
 		end,
 	}
 
 	dds.subType_dd = {
 		["name"] = "SubType",
-		["parent"] = GiveAwayHelper.mainFrame.ScrollChild,
+		["parent"] = M.mainFrame,
 		["title"] = "SubTypes",
-		["items"] = GiveAwayHelper.getItemFields("itemSubType"),
+		["items"] = M.getItemFields("itemSubType"),
 		["defaultVal"] = "All",
 		["changeFunc"] = function(dropdown_frame, dropdown_val)
-			GiveAwayHelper.subType = dropdown_val
-			GiveAwayHelper.ShowItems()
+			M.subType = dropdown_val
+			M.ShowItems()
 		end,
 	}
 
 	dds.slot_dd = {
 		["name"] = "loc",
-		["parent"] = GiveAwayHelper.mainFrame.ScrollChild,
+		["parent"] = M.mainFrame,
 		["title"] = "Item Slot",
-		["items"] = GiveAwayHelper.getItemFields("itemSlot"),
+		["items"] = M.getItemFields("itemSlot"),
 		["defaultVal"] = "All",
 		["changeFunc"] = function(dropdown_frame, dropdown_val)
-			GiveAwayHelper.slot = dropdown_val
-			GiveAwayHelper.ShowItems()
+			M.slot = dropdown_val
+			M.ShowItems()
 		end,
 	}
 
 	dds.typeDD = createDropdown(dds.type_dd)
-	dds.typeDD:SetPoint("TOPLEFT", typestart, -58)
+	dds.typeDD:SetPoint("TOPLEFT", typestart, -90)
 	subTypeStart = typestart + dds.typeDD:GetWidth() - 20
 
 	dds.subTypeDD = createDropdown(dds.subType_dd)
-	dds.subTypeDD:SetPoint("TOPLEFT", subTypeStart, -58)
+	dds.subTypeDD:SetPoint("TOPLEFT", subTypeStart, -90)
 	slotStart = subTypeStart + dds.subTypeDD:GetWidth() - 20
 
 	dds.slotDD = createDropdown(dds.slot_dd)
-	dds.slotDD:SetPoint("TOPLEFT", slotStart, -58)
+	dds.slotDD:SetPoint("TOPLEFT", slotStart, -90)
 
 	local minStart = slotStart + dds.slotDD:GetWidth()
 
-	dds.minLvlBox =
-		CreateFrame("EditBox", "GiveAwayHelperLvlMin", GiveAwayHelper.mainFrame.ScrollChild, "InputBoxTemplate")
+	dds.minLvlBox = CreateFrame("EditBox", "GiveAwayHelperLvlMin", M.mainFrame, "InputBoxTemplate")
 	dds.minLvlBox:SetAutoFocus(false)
 	dds.minLvlBox:SetFontObject("GameFontHighlightSmall")
 	dds.minLvlBox:SetHeight(22)
@@ -652,22 +640,21 @@ GiveAwayHelper.CreateInputs = function()
 			num = 0
 		end
 		num = math.floor(num)
-		num = GiveAwayHelper.Min(num, 60)
-		num = GiveAwayHelper.Max(num, 0)
+		num = M.Min(num, 60)
+		num = M.Max(num, 0)
 		frame:SetText(num)
-		GiveAwayHelper.minLvl = num
-		GiveAwayHelper.ShowItems()
+		M.minLvl = num
+		M.ShowItems()
 	end)
-	dds.minLvlBox:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame.ScrollChild, minStart, -60)
+	dds.minLvlBox:SetPoint("TOPLEFT", M.mainFrame, minStart, -90)
 	minStart = minStart + dds.minLvlBox:GetWidth() + 15
 
 	dds.minLvl_title = dds.minLvlBox:CreateFontString("minLvl_title", "OVERLAY", "GameFontNormal")
 	dds.minLvl_title:SetPoint("TOPLEFT", -3, 15)
 	dds.minLvl_title:SetText("Min Lvl")
 
-	dds.maxLvlBox =
-		CreateFrame("EditBox", "GiveAwayHelperLvlMax", GiveAwayHelper.mainFrame.ScrollChild, "InputBoxTemplate")
-	dds.maxLvlBox:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame.ScrollChild, minStart, -60)
+	dds.maxLvlBox = CreateFrame("EditBox", "GiveAwayHelperLvlMax", M.mainFrame, "InputBoxTemplate")
+	dds.maxLvlBox:SetPoint("TOPLEFT", M.mainFrame, minStart, -90)
 
 	dds.maxLvl_title = dds.maxLvlBox:CreateFontString("maxLvl_title", "OVERLAY", "GameFontNormal")
 	dds.maxLvl_title:SetPoint("TOPLEFT", -3, 15)
@@ -688,76 +675,73 @@ GiveAwayHelper.CreateInputs = function()
 			num = 0
 		end
 		num = math.floor(num)
-		num = GiveAwayHelper.Min(num, 60)
-		num = GiveAwayHelper.Max(num, 0)
-		GiveAwayHelper.maxLvl = num
-		GiveAwayHelper.ShowItems()
+		num = M.Min(num, 60)
+		num = M.Max(num, 0)
+		M.maxLvl = num
+		M.ShowItems()
 		frame:SetText(num)
 	end)
 
-	GiveAwayHelper.searchBox =
-		CreateFrame("EditBox", "GiveAwayHelperSearch", GiveAwayHelper.mainFrame.ScrollChild, "InputBoxTemplate")
-	GiveAwayHelper.searchBox:SetAutoFocus(false)
-	GiveAwayHelper.searchBox:SetFontObject("GameFontHighlight")
-	GiveAwayHelper.searchBox:SetHeight(30)
-	GiveAwayHelper.searchBox:SetWidth(minStart)
-	GiveAwayHelper.searchBox:SetJustifyH("LEFT")
-	GiveAwayHelper.searchBox:EnableMouse(true)
-	GiveAwayHelper.searchBox:SetMaxLetters(80)
-	GiveAwayHelper.searchBox:SetTextInsets(0, 5, 2, 0)
-	GiveAwayHelper.searchBox:HookScript("OnTextChanged", function(frame)
+	M.searchBox = CreateFrame("EditBox", "GiveAwayHelperSearch", M.mainFrame, "InputBoxTemplate")
+	M.searchBox:SetAutoFocus(false)
+	M.searchBox:SetFontObject("GameFontHighlight")
+	M.searchBox:SetHeight(30)
+	M.searchBox:SetWidth(minStart + 20)
+	M.searchBox:SetJustifyH("LEFT")
+	M.searchBox:EnableMouse(true)
+	M.searchBox:SetMaxLetters(254)
+	M.searchBox:SetTextInsets(0, 5, 2, 0)
+	M.searchBox:HookScript("OnTextChanged", function(frame)
 		local value = frame:GetText()
-		GiveAwayHelper.search = value
-		GiveAwayHelper.ShowItems()
+		M.search = value
+		M.ShowItems()
 	end)
-	GiveAwayHelper.searchBox:SetPoint("TOPLEFT", GiveAwayHelper.mainFrame.ScrollChild, 45, -15)
-	GiveAwayHelper.search_title = GiveAwayHelper.searchBox:CreateFontString("search_title", "OVERLAY", "GameFontNormal")
-	GiveAwayHelper.search_title:SetPoint("TOPLEFT", -3, 12)
-	GiveAwayHelper.search_title:SetText("Item Search" .. " (" .. #GiveAwayHelper.filteredItems .. ")")
+	M.searchBox:SetPoint("TOPLEFT", M.mainFrame, 20, -45)
+	M.search_title = M.searchBox:CreateFontString("search_title", "OVERLAY", "GameFontNormal")
+	M.search_title:SetPoint("TOPLEFT", -3, 12)
+	M.search_title:SetText("Item Search" .. " (" .. #M.filteredItems .. ")")
 
-	GiveAwayHelper.grabInst =
-		GiveAwayHelper.searchBox:CreateFontString("grab_instructions", "OVERLAY", "GameFontHighlightSmall")
-	GiveAwayHelper.grabInst:SetPoint("TOPRIGHT", -3, 12)
-	GiveAwayHelper.grabInst:SetText("Shift + Right Click to take item")
-	GiveAwayHelper.grabInst:SetJustifyH("RIGHT")
+	M.grabInst = M.searchBox:CreateFontString("grab_instructions", "OVERLAY", "GameFontHighlightSmall")
+	M.grabInst:SetPoint("TOPRIGHT", -3, 12)
+	M.grabInst:SetText("Shift + Right Click to take item")
+	M.grabInst:SetJustifyH("RIGHT")
 
-	GiveAwayHelper.mainFrame:SetSize(GiveAwayHelper.searchBox:GetWidth() + 55, MailFrame:GetHeight())
+	M.mainFrame:SetSize(M.searchBox:GetWidth() + 40, MailFrame:GetHeight())
 end
 
-GiveAwayHelper.showButtonText = function()
-	if GiveAwayHelper.Show then
+M.showButtonText = function()
+	if M.Show then
 		return "Hide Mail Bank"
 	else
 		return "Show Mail Bank"
 	end
 end
 
-GiveAwayHelper.toggleShow = function()
-	GiveAwayHelper.Show = not GiveAwayHelper.Show
-	GiveAwayHelper.toggleButton:SetText(GiveAwayHelper.showButtonText())
-	if GiveAwayHelper.Show then
-		GiveAwayHelper.mainFrame:Show()
-		GiveAwayHelper.PrintListButton:SetText("Print To: /" .. GiveAwayHelperDB.CHANNEL)
-		GiveAwayHelper.GetAllItems()
-		GiveAwayHelper.CreateInputs()
-		GiveAwayHelper.ShowItems()
+M.toggleShow = function()
+	M.Show = not M.Show
+	M.toggleButton:SetText(M.showButtonText())
+	if M.Show then
+		M.mainFrame:Show()
+		M.PrintListButton:SetText("Print To: /" .. GiveAwayHelperDB.CHANNEL)
+		M.GetAllItems()
+		M.CreateInputs()
+		M.ShowItems()
 	else
-		GiveAwayHelper.mainFrame:Hide()
+		M.mainFrame:Hide()
 	end
 end
 
-GiveAwayHelper.toggleButton = CreateFrame("Button", "EzAssignToggleButton", MailFrame, "GameMenuButtonTemplate")
-GiveAwayHelper.toggleButton:SetText(GiveAwayHelper.showButtonText())
-GiveAwayHelper.toggleButton:SetSize(160, 22)
-GiveAwayHelper.toggleButton:SetPoint("TOPRIGHT", MailFrame, "TOPRIGHT", 0, 22)
-GiveAwayHelper.toggleButton:HookScript("OnClick", GiveAwayHelper.toggleShow)
+M.toggleButton = CreateFrame("Button", "EzAssignToggleButton", MailFrame, "GameMenuButtonTemplate")
+M.toggleButton:SetText(M.showButtonText())
+M.toggleButton:SetSize(160, 22)
+M.toggleButton:SetPoint("TOPRIGHT", MailFrame, "TOPRIGHT", 0, 22)
+M.toggleButton:HookScript("OnClick", M.toggleShow)
 
-GiveAwayHelper.PrintListButton =
-	CreateFrame("Button", "GiveawayPrintListButton", GiveAwayHelper.mainFrame, "GameMenuButtonTemplate")
-GiveAwayHelper.PrintListButton:SetSize(150, 22)
-GiveAwayHelper.PrintListButton:SetPoint("TOPRIGHT", GiveAwayHelper.mainFrame, "TOPRIGHT", 0, 22)
-GiveAwayHelper.PrintListButton:HookScript("OnClick", function()
-	GiveAwayHelper.printFiltered()
+M.PrintListButton = CreateFrame("Button", "GiveawayPrintListButton", M.mainFrame, "GameMenuButtonTemplate")
+M.PrintListButton:SetSize(150, 22)
+M.PrintListButton:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", 0, 22)
+M.PrintListButton:HookScript("OnClick", function()
+	M.printFiltered()
 end)
 
 Filters = {
@@ -944,7 +928,7 @@ end
 ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", myChatFilter)
 ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", myChatFilter)
 
-GiveAwayHelper.Min = function(a, b)
+M.Min = function(a, b)
 	if a < b then
 		return a
 	else
@@ -952,7 +936,7 @@ GiveAwayHelper.Min = function(a, b)
 	end
 end
 
-GiveAwayHelper.Max = function(a, b)
+M.Max = function(a, b)
 	if a > b then
 		return a
 	else
@@ -960,32 +944,32 @@ GiveAwayHelper.Max = function(a, b)
 	end
 end
 
-GiveAwayHelper.printTableValues = function(tbl, indent)
+M.printTableValues = function(tbl, indent)
 	indent = indent or 0
 
 	for key, value in pairs(tbl) do
 		if type(value) == "table" then
 			print(string.rep("  ", indent) .. key .. " (table):")
-			GiveAwayHelper.printTableValues(value, indent + 1)
+			M.printTableValues(value, indent + 1)
 		else
 			print(string.rep("  ", indent) .. key .. ": " .. tostring(value))
 		end
 	end
 end
 
-GiveAwayHelper.PrintDB = function()
+M.PrintDB = function()
 	print("-----------------------")
-	GiveAwayHelper.printTableValues(GiveAwayHelperDB)
-	print("-----------------------")
-end
-
-GiveAwayHelper.PrintState = function(item)
-	print("-----------------------")
-	GiveAwayHelper.printTableValues(GiveAwayHelper[item])
+	M.printTableValues(GiveAwayHelperDB)
 	print("-----------------------")
 end
 
-GiveAwayHelper.PrintHelp = function()
+M.PrintState = function(item)
+	print("-----------------------")
+	M.printTableValues(M[item])
+	print("-----------------------")
+end
+
+M.PrintHelp = function()
 	print("----------------------------")
 	print("/gaDB - view saved variables")
 	print("/gaChan <channel number or GUILD> - sets the channel to send messages to")
@@ -999,19 +983,19 @@ GiveAwayHelper.PrintHelp = function()
 	)
 	print("To add a custom note to an item, include it within [ and ] in the mail subject.")
 	print("You can also add pre-defined notes by using the following keywords:")
-	GiveAwayHelper.printTableValues(GiveAwayHelperDB.Notes)
+	M.printTableValues(GiveAwayHelperDB.Notes)
 	print("/ganotes <label> <note or remove> - adds a predefined note to the list. Use 'remove' to remove a note")
 	print("-----------------------")
 end
 
-SlashCmdList["CHAN"] = GiveAwayHelper.setChannel
-SlashCmdList["LIST"] = GiveAwayHelper.GetMailByCat
-SlashCmdList["CATS"] = GiveAwayHelper.PrintCats
-SlashCmdList["GRAB"] = GiveAwayHelper.GrabItem
-SlashCmdList["RESET"] = GiveAwayHelper.resetVars
-SlashCmdList["HELP"] = GiveAwayHelper.PrintHelp
-SlashCmdList["DB"] = GiveAwayHelper.PrintDB
-SlashCmdList["STATE"] = GiveAwayHelper.PrintState
-SlashCmdList["BANKALTS"] = GiveAwayHelper.bankAlts
-SlashCmdList["NOTES"] = GiveAwayHelper.notes
-SlashCmdList["UPDATE"] = GiveAwayHelper.ShowItems
+SlashCmdList["CHAN"] = M.setChannel
+SlashCmdList["LIST"] = M.GetMailByCat
+SlashCmdList["CATS"] = M.PrintCats
+SlashCmdList["GRAB"] = M.GrabItem
+SlashCmdList["RESET"] = M.resetVars
+SlashCmdList["HELP"] = M.PrintHelp
+SlashCmdList["DB"] = M.PrintDB
+SlashCmdList["STATE"] = M.PrintState
+SlashCmdList["BANKALTS"] = M.bankAlts
+SlashCmdList["NOTES"] = M.notes
+SlashCmdList["UPDATE"] = M.ShowItems
