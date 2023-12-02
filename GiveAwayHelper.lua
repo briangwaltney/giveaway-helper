@@ -11,7 +11,7 @@ SLASH_BANKALTS1 = "/gabankalts"
 SLASH_NOTES1 = "/ganotes"
 SLASH_UPDATE1 = "/gaupdate"
 
-M = {
+local M = {
 	items = {},
 	filteredItems = {},
 	minLvl = 1,
@@ -315,7 +315,7 @@ M.GetAllItems = function()
 end
 
 M.sortByLevel = function(a, b)
-	return a.itemMinLevel > b.itemMinLevel
+	return (a.itemMinLevel or 0) > (b.itemMinLevel or 0)
 end
 
 M.filterItems = function()
