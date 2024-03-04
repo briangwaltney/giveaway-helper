@@ -1,3 +1,25 @@
+-- {{{ Print Table Values. General Func
+
+local printTableValues = function(tbl, indent)
+	if tbl == nil then
+		print("Table is nil")
+		return
+	end
+	indent = indent or 0
+
+	for key, value in pairs(tbl) do
+		if type(value) == "table" then
+			print(string.rep("  ", indent) .. key .. " (table):")
+			printTableValues(value, indent + 1)
+		else
+			print(string.rep("  ", indent) .. key .. ": " .. tostring(value))
+		end
+	end
+end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Slash Commands
+
 SLASH_CHAN1 = "/gaChan"
 SLASH_LIST1 = "/gaList"
 SLASH_CATS1 = "/gaCats"
@@ -10,6 +32,9 @@ SLASH_FRAMESTK1 = "/fs"
 SLASH_BANKALTS1 = "/gabankalts"
 SLASH_NOTES1 = "/ganotes"
 SLASH_UPDATE1 = "/gaupdate"
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Globals and defaults
 
 local M = {
 	items = {},
@@ -38,9 +63,15 @@ local default = {
 
 GiveAwayHelperDB = GiveAwayHelperDB or default
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Reset DB
+
 M.resetVars = function()
 	GiveAwayHelperDB = default
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Bank Alt Utility for Claims channel filtering
 
 M.bankAlts = function(input)
 	local name, add = strsplit(" ", input)
@@ -53,6 +84,9 @@ M.bankAlts = function(input)
 	end
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Notes utility to add special notes to items
+
 M.notes = function(input)
 	local label, note = input:match("([^%s]+)%s(.*)")
 	if note == "remove" then
@@ -64,6 +98,9 @@ M.notes = function(input)
 	end
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Set Channel to print to
+
 M.setChannel = function(channelNum)
 	if channelNum == "" then
 		GiveAwayHelperDB.CHANNEL = "7"
@@ -73,6 +110,9 @@ M.setChannel = function(channelNum)
 	print("CHANNEL SET TO: " .. GiveAwayHelperDB.CHANNEL)
 	M.PrintListButton:SetText("Print To: " .. GiveAwayHelperDB.CHANNEL)
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Send message. Default to channel 7 for testing
 
 M.SendMessage = function(msg, channel)
 	if channel == nil then
@@ -84,6 +124,29 @@ M.SendMessage = function(msg, channel)
 		SendChatMessage(msg, "CHANNEL", nil, channel)
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Hidden tooltip for parsing item info
+
+M.hiddenTooltip = CreateFrame("GameTooltip", "GiveAwayHelperHiddenTooltip", nil, "GameTooltipTemplate")
+M.hiddenTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+
+M.getToolTipInfo = function()
+	local info = {}
+	for i = 1, 10 do
+		local line = _G["GiveAwayHelperHiddenTooltipTextLeft" .. i]
+		if line then
+			local text = line:GetText()
+			if text then
+				table.insert(info, text)
+			end
+		end
+	end
+	return info
+end
+
+------------------------------------------------------------------------ }}}
+-- {{{ Category Filter
 
 M.CatFilter = function(cat, itemType, itemSubType, loc)
 	if cat == "rings" and loc == "INVTYPE_FINGER" then
@@ -107,6 +170,9 @@ M.CatFilter = function(cat, itemType, itemSubType, loc)
 		return false
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Grab Item from Mail
 
 M.GrabItem = function(itemLink)
 	local numItems = GetInboxNumItems()
@@ -133,6 +199,9 @@ M.GrabItem = function(itemLink)
 	print("ITEM NOT FOUND IN MAILBOX")
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Level Filter
+
 M.LevelFilter = function(min, max, itemLevel)
 	if itemLevel >= tonumber(min) and itemLevel <= tonumber(max) then
 		return true
@@ -140,6 +209,9 @@ M.LevelFilter = function(min, max, itemLevel)
 		return false
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Create Item Frames
 
 BUTTON_COUNT = 0
 
@@ -256,6 +328,9 @@ M.CreateItemFrames = function(item)
 	return button
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Get All Items from Mail
+
 M.GetAllItems = function()
 	local items = {}
 	local numItems = GetInboxNumItems()
@@ -265,6 +340,11 @@ M.GetAllItems = function()
 			for j = 1, 20 do
 				local name, itemID, _, itemCount = GetInboxItem(i, j)
 				local link = GetInboxItemLink(i, j)
+
+				if link == nil then
+					break
+				end
+
 				if name then
 					local _, _, qual, _, itemMinLevel, itemType, itemSubType, _, slot, texture = GetItemInfo(itemID)
 					local note = ""
@@ -279,13 +359,25 @@ M.GetAllItems = function()
 						note = match
 					end
 
-					if items[name] ~= nil then
-						items[name].itemCount = items[name].itemCount + itemCount
-						if items[name].note == "" then
-							items[name].note = note
+					M.hiddenTooltip:SetHyperlink(link)
+					local ttInfo = M.getToolTipInfo()
+
+					for _, v in pairs(ttInfo) do
+						if v == nil then
+							break
+						end
+						if v:find("Classes: ") then
+							note = note .. " " .. v
+						end
+					end
+
+					if items[link] ~= nil then
+						items[link].itemCount = items[link].itemCount + itemCount
+						if items[link].note == "" then
+							items[link].note = note
 						end
 					else
-						items[name] = {
+						items[link] = {
 							itemName = name,
 							itemLink = link,
 							itemMinLevel = itemMinLevel,
@@ -314,9 +406,15 @@ M.GetAllItems = function()
 	table.sort(M.items, M.sortByLevel)
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Sort items by level
+
 M.sortByLevel = function(a, b)
 	return (a.itemMinLevel or 0) > (b.itemMinLevel or 0)
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Filter Items
 
 M.filterItems = function()
 	for i, item in pairs(M.filteredItems) do
@@ -326,7 +424,8 @@ M.filterItems = function()
 
 	for _, item in pairs(M.items) do
 		if
-			item.itemCount > 0 and M.search == "" or string.find(string.lower(item.itemName), string.lower(M.search))
+			item.itemCount > 0 and M.search == ""
+			or string.find(string.lower(item.itemName .. " " .. item.note), string.lower(M.search))
 		then
 			if M.type == "All" or M.type == item.itemType then
 				if M.subType == "All" or M.subType == item.itemSubType then
@@ -342,6 +441,9 @@ M.filterItems = function()
 		end
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print Filtered List to selected Channel
 
 M.printFiltered = function()
 	local typeString = ""
@@ -382,8 +484,22 @@ M.printFiltered = function()
 
 		M.SendMessage(item.itemLink .. " " .. countText .. " " .. levelRange .. item.note, GiveAwayHelperDB.CHANNEL)
 	end
-	M.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
+	M.SendMessage(
+		"---- END OF SEGMENT ("
+			.. typeString
+			.. subTypeString
+			.. slotString
+			.. " LEVELS: "
+			.. M.minLvl
+			.. "-"
+			.. M.maxLvl
+			.. ") ----",
+		GiveAwayHelperDB.CHANNEL
+	)
 end
+
+-- ------------------------------------------------------------------------------ }}}
+-- {{{ Show Items based on filters
 
 M.ShowItems = function()
 	for _, item in pairs(M.items) do
@@ -396,6 +512,9 @@ M.ShowItems = function()
 		M.search_title:SetText("Item Search" .. " (" .. #M.filteredItems .. ")")
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Get Mail and sort by category
 
 M.GetMailByCat = function(input)
 	if input == "" or input == nil then
@@ -446,6 +565,9 @@ M.GetMailByCat = function(input)
 	M.SendMessage("---- END OF SEGMENT ----", GiveAwayHelperDB.CHANNEL)
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print Category List
+
 M.PrintCats = function()
 	local withoutKeys = {}
 	for cat, val in pairs(Filters) do
@@ -462,6 +584,9 @@ M.PrintCats = function()
 		print(val.order .. ": " .. val.key)
 	end
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Main Frame Creation
 
 M.mainFrame = CreateFrame("Frame", "GiveAwayHelperMainFrame", MailFrame, "BasicFrameTemplateWithInset")
 M.mainFrame:SetSize(HonorFrameProgressButton:GetWidth() + 300, MailFrame:GetHeight())
@@ -486,6 +611,9 @@ M.mainFrame:SetScript("OnEvent", function(self, event, ...)
 		M.ShowItems()
 	end
 end)
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Dropdown Generator
 
 --- Opts:
 ---     name (string): Name of the dropdown (lowercase)
@@ -537,6 +665,9 @@ local function createDropdown(opts)
 	return dropdown
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Contains Value Helper
+
 M.containsValue = function(table, value)
 	for _, v in pairs(table) do
 		if v == value then
@@ -545,6 +676,9 @@ M.containsValue = function(table, value)
 	end
 	return false
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Get Item Fields
 
 M.getItemFields = function(key)
 	local types = {}
@@ -565,6 +699,9 @@ M.getItemFields = function(key)
 	end
 	return valuesOnly
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Input Creation for Frame (Dropdowns, Search Box, etc.)
 
 M.CreateInputs = function()
 	if M.searchBox ~= nil then
@@ -709,6 +846,9 @@ M.CreateInputs = function()
 	M.mainFrame:SetSize(M.searchBox:GetWidth() + 40, MailFrame:GetHeight())
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Toggle Button on mail frame
+
 M.showButtonText = function()
 	if M.Show then
 		return "Hide Mail Bank"
@@ -730,12 +870,14 @@ M.toggleShow = function()
 		M.mainFrame:Hide()
 	end
 end
-
 M.toggleButton = CreateFrame("Button", "EzAssignToggleButton", MailFrame, "GameMenuButtonTemplate")
 M.toggleButton:SetText(M.showButtonText())
 M.toggleButton:SetSize(160, 22)
 M.toggleButton:SetPoint("TOPRIGHT", MailFrame, "TOPRIGHT", 0, 22)
 M.toggleButton:HookScript("OnClick", M.toggleShow)
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print List Button
 
 M.PrintListButton = CreateFrame("Button", "GiveawayPrintListButton", M.mainFrame, "GameMenuButtonTemplate")
 M.PrintListButton:SetSize(150, 22)
@@ -743,6 +885,9 @@ M.PrintListButton:SetPoint("TOPRIGHT", M.mainFrame, "TOPRIGHT", 0, 22)
 M.PrintListButton:HookScript("OnClick", function()
 	M.printFiltered()
 end)
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Old Filters. I don't think they are used.
 
 Filters = {
 	plate = {
@@ -902,10 +1047,16 @@ Filters = {
 	},
 }
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Trim String Before Hyphen
+
 local function trimStringBeforeHyphen(inputString)
 	local result = string.match(inputString, "^(.-)-")
 	return result or inputString
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Chat filters for claims channel
 
 local function myChatFilter(self, _, msg, _, _, _, author)
 	local shortName = trimStringBeforeHyphen(author)
@@ -928,6 +1079,9 @@ end
 ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", myChatFilter)
 ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", myChatFilter)
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Min/Max Utils
+
 M.Min = function(a, b)
 	if a < b then
 		return a
@@ -944,30 +1098,26 @@ M.Max = function(a, b)
 	end
 end
 
-M.printTableValues = function(tbl, indent)
-	indent = indent or 0
-
-	for key, value in pairs(tbl) do
-		if type(value) == "table" then
-			print(string.rep("  ", indent) .. key .. " (table):")
-			M.printTableValues(value, indent + 1)
-		else
-			print(string.rep("  ", indent) .. key .. ": " .. tostring(value))
-		end
-	end
-end
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print DB
 
 M.PrintDB = function()
 	print("-----------------------")
-	M.printTableValues(GiveAwayHelperDB)
+	printTableValues(GiveAwayHelperDB)
 	print("-----------------------")
 end
 
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print State
+
 M.PrintState = function(item)
 	print("-----------------------")
-	M.printTableValues(M[item])
+	printTableValues(M[item])
 	print("-----------------------")
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Print Help
 
 M.PrintHelp = function()
 	print("----------------------------")
@@ -983,10 +1133,13 @@ M.PrintHelp = function()
 	)
 	print("To add a custom note to an item, include it within [ and ] in the mail subject.")
 	print("You can also add pre-defined notes by using the following keywords:")
-	M.printTableValues(GiveAwayHelperDB.Notes)
+	printTableValues(GiveAwayHelperDB.Notes)
 	print("/ganotes <label> <note or remove> - adds a predefined note to the list. Use 'remove' to remove a note")
 	print("-----------------------")
 end
+
+-- -------------------------------------------------------------------------------- }}}
+-- {{{ Register Slash Commands
 
 SlashCmdList["CHAN"] = M.setChannel
 SlashCmdList["LIST"] = M.GetMailByCat
@@ -999,3 +1152,5 @@ SlashCmdList["STATE"] = M.PrintState
 SlashCmdList["BANKALTS"] = M.bankAlts
 SlashCmdList["NOTES"] = M.notes
 SlashCmdList["UPDATE"] = M.ShowItems
+
+-- -------------------------------------------------------------------------------- }}}
