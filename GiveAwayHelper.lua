@@ -21,6 +21,7 @@ end
 -- {{{ Slash Commands
 
 SLASH_CHAN1 = "/gaChan"
+SLASH_SHOW1 = "/gaShow"
 SLASH_LIST1 = "/gaList"
 SLASH_CATS1 = "/gaCats"
 SLASH_GRAB1 = "/gaGrab"
@@ -373,9 +374,6 @@ M.GetAllItems = function()
 
 					if items[link] ~= nil then
 						items[link].itemCount = items[link].itemCount + itemCount
-						if items[link].note == "" then
-							items[link].note = note
-						end
 					else
 						items[link] = {
 							itemName = name,
@@ -1066,7 +1064,6 @@ local function myChatFilter(self, _, msg, _, _, _, author)
 	if string.find(string.lower(msg), "end of segment") ~= nil then
 		return false
 	end
-
 	if GiveAwayHelperDB.BankAlts[string.lower(shortName)] ~= nil then
 		return true
 	end
@@ -1152,5 +1149,6 @@ SlashCmdList["STATE"] = M.PrintState
 SlashCmdList["BANKALTS"] = M.bankAlts
 SlashCmdList["NOTES"] = M.notes
 SlashCmdList["UPDATE"] = M.ShowItems
+SlashCmdList["SHOW"] = M.toggleShow
 
 -- -------------------------------------------------------------------------------- }}}
