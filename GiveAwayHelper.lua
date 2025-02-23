@@ -338,13 +338,9 @@ M.GetAllItems = function()
 	for i = 1, numItems do
 		local _, _, _, subject, _, _, _, numItems, _, _, _, _, isGM = GetInboxHeaderInfo(i)
 		if not isGM and numItems ~= nil then
-			for j = 1, 20 do
+			for j = 1, ATTACHMENTS_MAX_RECEIVE do
 				local name, itemID, _, itemCount = GetInboxItem(i, j)
 				local link = GetInboxItemLink(i, j)
-
-				if link == nil then
-					break
-				end
 
 				if name then
 					local _, _, qual, _, itemMinLevel, itemType, itemSubType, _, slot, texture = GetItemInfo(itemID)
@@ -360,22 +356,26 @@ M.GetAllItems = function()
 						note = match
 					end
 
-					M.hiddenTooltip:SetHyperlink(link)
-					local ttInfo = M.getToolTipInfo()
+					if link ~= nil then
+						M.hiddenTooltip:SetHyperlink(link)
+						local ttInfo = M.getToolTipInfo()
 
-					for _, v in pairs(ttInfo) do
-						if v == nil then
-							break
-						end
-						if v:find("Classes: ") then
-							note = note .. " " .. v
+						for _, v in pairs(ttInfo) do
+							if v == nil then
+								break
+							end
+							if v:find("Classes: ") then
+								note = note .. " " .. v
+							end
 						end
 					end
 
-					if items[link] ~= nil then
-						items[link].itemCount = items[link].itemCount + itemCount
+					local found_item = items[name]
+
+					if found_item ~= nil and found_item.note == note then
+						items[name].itemCount = items[name].itemCount + itemCount
 					else
-						items[link] = {
+						items[name] = {
 							itemName = name,
 							itemLink = link,
 							itemMinLevel = itemMinLevel,
@@ -408,7 +408,11 @@ end
 -- {{{ Sort items by level
 
 M.sortByLevel = function(a, b)
-	return (a.itemMinLevel or 0) > (b.itemMinLevel or 0)
+	if a.itemMinLevel == b.itemMinLevel then
+		return a.itemName < b.itemName
+	else
+		return (a.itemMinLevel or 0) > (b.itemMinLevel or 0)
+	end
 end
 
 -- -------------------------------------------------------------------------------- }}}
@@ -868,7 +872,7 @@ M.toggleShow = function()
 		M.mainFrame:Hide()
 	end
 end
-M.toggleButton = CreateFrame("Button", "EzAssignToggleButton", MailFrame, "GameMenuButtonTemplate")
+M.toggleButton = CreateFrame("Button", "GiveAwayHelperToggleButton", MailFrame, "GameMenuButtonTemplate")
 M.toggleButton:SetText(M.showButtonText())
 M.toggleButton:SetSize(160, 22)
 M.toggleButton:SetPoint("TOPRIGHT", MailFrame, "TOPRIGHT", 0, 22)
