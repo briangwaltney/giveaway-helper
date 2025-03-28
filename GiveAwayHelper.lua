@@ -370,12 +370,13 @@ M.GetAllItems = function()
 						end
 					end
 
-					local found_item = items[name]
+					local nameWithNote = name .. " " .. note
+					local found_item = items[nameWithNote]
 
-					if found_item ~= nil and found_item.note == note then
-						items[name].itemCount = items[name].itemCount + itemCount
+					if found_item ~= nil then
+						items[nameWithNote].itemCount = items[nameWithNote].itemCount + itemCount
 					else
-						items[name] = {
+						items[nameWithNote] = {
 							itemName = name,
 							itemLink = link,
 							itemMinLevel = itemMinLevel,
