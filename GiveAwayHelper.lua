@@ -340,9 +340,9 @@ M.GetAllItems = function()
 		if not isGM and numItems ~= nil then
 			for j = 1, ATTACHMENTS_MAX_RECEIVE do
 				local name, itemID, _, itemCount = GetInboxItem(i, j)
-				local link = GetInboxItemLink(i, j)
 
 				if name then
+					local link = GetInboxItemLink(i, j)
 					local _, _, qual, _, itemMinLevel, itemType, itemSubType, _, slot, texture = GetItemInfo(itemID)
 					local note = ""
 
@@ -368,6 +368,7 @@ M.GetAllItems = function()
 								note = note .. " " .. v
 							end
 						end
+						M.hiddenTooltip:SetHyperlink("item:1")
 					end
 
 					local nameWithNote = name .. " " .. note
